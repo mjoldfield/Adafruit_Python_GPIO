@@ -147,7 +147,54 @@ class AdafruitBBIOAdapter(BaseGPIO):
 		"""
 		return self.bbio_gpio.input(pin)
 
+class SysFS_GPIO_Adapter(object):
+	"""GPIO implementation using sysfs."""
+        
+	def setup(self, pin, mode):
+		"""Set the input or output mode for a specified pin.  Mode should be
+		either OUT or IN."""
+               write_to_sys_gpio("export", pin)
+               write_to_sys_gpiopin(pin, "direction", "out" if [mode.lower == "out"] else "in")
 
+	def output(self, pin, value):
+		"""Set the specified pin the provided high/low value.  Value should be
+		either HIGH/LOW or a boolean (true = high)."""
+               write_to_sys_gpiopin(pin, "value", parse_bit(value))
+
+	def input(self, pin):
+		"""Read the specified pin and return HIGH/true if the pin is pulled high,
+		or LOW/false if pulled low."""
+               read_from_sys_gpiopin(pin, parse_bit(value))
+
+
+def write_to_file(data, file):
+       with open(file, 'w') as f:
+               f.write(data)
+               f.close()
+
+def write_to_sys_gpio(data, df):
+       write_to_file("/sys/class/gpio/" + df, data)
+
+def write_to_sys_gpiopin(pin, df, data):
+       write_to_file("/sys/class/gpio/gpiopin" + pin.str() + "/" + df, data)
+
+
+def parse_bit(value):
+       if value == True:
+               return 1
+       elif value.lower == "high"
+               return 1
+       elif value == 1
+               return 1
+       elif value == False:
+               return 0
+       elif value.lower == "low"
+               return 0
+       elif value == 0
+               return 0
+
+       raise RuntimeError('Invalid bit value: ' + value)
+        
 def get_platform_gpio(**keywords):
 	"""Attempt to return a GPIO instance for the platform which the code is being
 	executed on.  Currently supports only the Raspberry Pi using the RPi.GPIO
@@ -162,5 +209,7 @@ def get_platform_gpio(**keywords):
 	elif plat == Platform.BEAGLEBONE_BLACK:
 		import Adafruit_BBIO.GPIO
 		return AdafruitBBIOAdapter(Adafruit_BBIO.GPIO, **keywords)
+        elif plat == Platform.SysFS:
+                return SysFS_GPIO_Adapter(**keywords)
 	elif plat == Platform.UNKNOWN:
 		raise RuntimeError('Could not determine platform.')

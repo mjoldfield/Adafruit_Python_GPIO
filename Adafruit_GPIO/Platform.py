@@ -20,12 +20,13 @@
 # SOFTWARE.
 import platform
 import re
+import os.path
 
 # Platform identification constants.
 UNKNOWN          = 0
 RASPBERRY_PI     = 1
 BEAGLEBONE_BLACK = 2
-
+SysFS            = 3
 
 def platform_detect():
 	"""Detect if running on the Raspberry Pi or Beaglebone Black and return the
@@ -60,6 +61,8 @@ def platform_detect():
 		return BEAGLEBONE_BLACK	
 	elif plat.lower().find('armv7l-with-glibc2.4') > -1:
 		return BEAGLEBONE_BLACK
+        elif os.path.exists("/sys/class"):
+                return SysFS
 	else:
 		return UNKNOWN
 

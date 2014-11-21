@@ -172,7 +172,7 @@ def write_to_file(data, file):
                f.write(data)
                f.close()
 
-def write_to_sys_gpio(data, df):
+def write_to_sys_gpio(df, data):
        write_to_file("/sys/class/gpio/" + df, data)
 
 def write_to_sys_gpiopin(pin, df, data):

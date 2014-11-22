@@ -153,7 +153,7 @@ class SysFS_GPIO_Adapter(object):
 	def setup(self, pin, mode):
 		"""Set the input or output mode for a specified pin.  Mode should be
 		either OUT or IN."""
-                write_to_sys_gpio("export", pin)
+                write_to_sys_gpio("export", "%d" % pin)
                 write_to_sys_gpiopin(pin, "direction", "out" if [mode.lower == "out"] else "in")
                 
         def output(self, pin, value):
@@ -164,30 +164,27 @@ class SysFS_GPIO_Adapter(object):
         def input(self, pin):
 		"""Read the specified pin and return HIGH/true if the pin is pulled high,
 		or LOW/false if pulled low."""
-                read_from_sys_gpiopin(pin, parse_bit(value))
+                read_from_sys_gpiopin(pin, "value")
 
-
-def write_to_file(data, file):
-       with open(file, 'w') as f:
-               f.write(data)
-               f.close()
+def write_to_file(file, data):
+        with open(file, 'w') as f:
+                f.write(data + "\n")
 
 def write_to_sys_gpio(df, data):
        write_to_file("/sys/class/gpio/" + df, data)
 
 def write_to_sys_gpiopin(pin, df, data):
-       write_to_file("/sys/class/gpio/gpiopin" + pin.str() + "/" + df, data)
-
+       write_to_file("/sys/class/gpio/gpio%d/%s" % (pin, df), data)
 
 def parse_bit(value):
        if value == True:
-               return 1
+               return "1"
        elif value == 1:
-               return 1
+               return "1"
        elif value == False:
-               return 0
+               return "0"
        elif value == 0:
-               return 0
+               return "0"
 
        raise RuntimeError('Invalid bit value: ' + value)
         

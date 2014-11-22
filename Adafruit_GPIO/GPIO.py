@@ -154,7 +154,7 @@ class SysFS_GPIO_Adapter(object):
 		"""Set the input or output mode for a specified pin.  Mode should be
 		either OUT or IN."""
                 write_to_sys_gpio("export", "%d" % pin)
-                write_to_sys_gpiopin(pin, "direction", "out" if [mode.lower == "out"] else "in")
+                write_to_sys_gpiopin(pin, "direction", "out" if mode == OUT else "in")
                 
         def output(self, pin, value):
                 """Set the specified pin the provided high/low value.  Value should be

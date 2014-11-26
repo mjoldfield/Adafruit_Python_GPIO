@@ -21,6 +21,7 @@
 
 import operator
 import time
+import io
 
 import Adafruit_GPIO as GPIO
 
@@ -94,6 +95,56 @@ class SpiDev(object):
 		"""
 		return bytearray(self._device.xfer2(data))
 
+
+# The implementation below is poor and does the very barest minimum to get my
+# project working. If you knew enough Python to do ioctls and had the hardware
+# to test it, then I don't think it would be too hard:
+#   https://www.kernel.org/doc/Documentation/spi/spidev
+#   https://docs.python.org/2/library/fcntl.html
+#
+# As it is, I've just fleshed out the API with stubs: fatal errors for read and
+# transfer; warnings for the rest.
+class DevFS(object):
+        """/dev based implementation of the SPI protocol, currently rather lacking
+           in features because I don't have the hardware and python fu  to test it.
+        """
+        def __init__(self, dev, port):
+                self._dev  = dev
+                self._port = port
+                path = "/dev/spidev%d.%d" % (dev,port)
+                self._fd = io.open(path, mode="wb", buffering=0)
+                
+                # At this point should really initialize things with an ioctl
+
+	def close(self):
+		"""Close communication with the SPI device."""
+		self._fd.close()
+
+        def write(self, data):
+		"""Half-duplex SPI write.  The specified array of bytes will be clocked
+		out the MOSI line.
+		"""
+                fmt  = "%dB" % (len(data))
+                str  = struct.pack(fmt, *data)
+                self._fd.write(str)
+                
+        def read(self, length):
+                raise Warning('Unimplemented')
+
+        def transfer(self, data):
+                raise Warning('Unimplemented')
+        
+	def set_clock_hz(self, hz):
+                sys.stderr.write("set_clock_hz() not implmented and thus ignored.\n");
+
+	def set_mode(self, mode):
+                sys.stderr.write("set_mode() not implmented and thus ignored.\n");
+
+	def set_bit_order(self, order):
+                sys.stderr.write("set_bit_order() not implmented and thus ignored.\n");
+
+
+                
 
 class BitBang(object):
 	"""Software-based implementation of the SPI protocol over GPIO pins."""

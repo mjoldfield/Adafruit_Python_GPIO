@@ -5,12 +5,11 @@ gpio = GPIO.get_platform_gpio()
 
 pin = 338
 
-gpio.setup(pin, "out")
+gpio.setup(pin, GPIO.OUT)
 
-while True:
-    gpio.output(pin, 1)
-    time.sleep(0.5)
-    gpio.output(pin, 0)
-    time.sleep(0.5)
+gpio.output(pin, 1)
+time.sleep(0.5)
+gpio.output(pin, 0)
+time.sleep(0.5)
 
 

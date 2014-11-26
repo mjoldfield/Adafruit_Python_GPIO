@@ -21,6 +21,7 @@
 
 import Adafruit_GPIO.Platform as Platform
 
+import io
 
 OUT 	= 0
 IN 		= 1
@@ -147,13 +148,17 @@ class AdafruitBBIOAdapter(BaseGPIO):
 		"""
 		return self.bbio_gpio.input(pin)
 
-class SysFS_GPIO_Adapter(object):
+class SysFS_GPIO_Adapter(BaseGPIO):
 	"""GPIO implementation using sysfs."""
         
 	def setup(self, pin, mode):
 		"""Set the input or output mode for a specified pin.  Mode should be
 		either OUT or IN."""
-                write_to_sys_gpio("export", "%d" % pin)
+                try:
+                        write_to_sys_gpio("export", "%d" % pin)
+                except:
+                        # probably means the port's already exported
+                        pass
                 write_to_sys_gpiopin(pin, "direction", "out" if mode == OUT else "in")
                 
         def output(self, pin, value):
@@ -167,8 +172,9 @@ class SysFS_GPIO_Adapter(object):
                 read_from_sys_gpiopin(pin, "value")
 
 def write_to_file(file, data):
-        with open(file, 'w') as f:
+        with io.open(file, mode='wb', buffering=0) as f:
                 f.write(data + "\n")
+                f.close
 
 def write_to_sys_gpio(df, data):
        write_to_file("/sys/class/gpio/" + df, data)

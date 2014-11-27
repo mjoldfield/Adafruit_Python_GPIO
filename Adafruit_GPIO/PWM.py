@@ -122,8 +122,7 @@ class SysFS_PWM_Adapter(object):
                                 # setting data here implies the pwm is live
 
 	def start(self, pin, dutycycle, frequency_hz=2000):
-		"""Enable PWM output on specified pin.  Set to intiial percent duty cycle
-		value (0.0 to 100.0) and frequency (in Hz).
+		"""Enable PWM output on specified pin.  Set to intiial percent duty cycle value (0.0 to 100.0) and frequency (in Hz).
 		"""
                 try:
                         self.write_to_chip("export", "%d" % pin)
@@ -131,46 +130,46 @@ class SysFS_PWM_Adapter(object):
                         # probably mean's the pin's already enabled, if not we'll fail soon enough...
                         pass
                  
-                self.set_duty_cycle_and_freq(pin, dutycycle, frequency_hz)
+                self.set_dutycycle_and_freq(pin, dutycycle, frequency_hz)
                 
                 self.write_to_pwm(pin, "enable", "1")
 
-	def set_duty_cycle_and_freq(self, pin, new_duty_cycle, new_freq_hz):
-		if dutycycle < 0.0 or dutycycle > 100.0:
+	def set_dutycycle_and_freq(self, pin, new_dutycycle, new_freq_hz):
+		if new_dutycycle < 0.0 or new_dutycycle > 100.0:
 			raise ValueError('Invalid duty cycle value, must be between 0.0 to 100.0 (inclusive).')
 
                 # Ensure there's always something there
-                if pin not in self._pwm:
+                if pin not in self.pwm:
                     self.pwm[pin] = (0.0, 1000.0)
 
-                (duty_cycle, freq_hz) = self.pwm[pin]
+                (dutycycle, freq_hz) = self.pwm[pin]
 
-                if new_duty_cycle is not None:
-                        duty_cycle = new_duty_cycle
+                if new_dutycycle is not None:
+                        dutycycle = new_dutycycle
                 if new_freq_hz is not None:
                         freq_hz = new_freq_hz
                         
                 period_ns  = 1.0e9 / freq_hz
-                time_on_ns = duty_cycle * period_ns / 100.0
+                time_on_ns = dutycycle * period_ns / 100.0
 
                 self.write_to_pwm(pin, "period",     "%d" % period_ns)
                 self.write_to_pwm(pin, "duty_cycle", "%d" % time_on_ns)
                 
-                self.pwm[pin] = (duty_cycle, freq_hz)
+                self.pwm[pin] = (dutycycle, freq_hz)
 
 	def set_duty_cycle(self, pin, dutycycle):
 		"""Set percent duty cycle of PWM output on specified pin.  Duty cycle must
 		be a value 0.0 to 100.0 (inclusive).
 		"""
-		if pin not in self._pwm:
+		if pin not in self.pwm:
 			raise ValueError('Pin {0} is not configured as a PWM.  Make sure to first call start for the pin.'.format(pin))
-                self.set_duty_cycle_and_freq(pin, duty_cycle, None)
+                self.set_dutycycle_and_freq(pin, dutycycle, None)
 
 	def set_frequency(self, pin, frequency_hz):
 		"""Set frequency (in Hz) of PWM output on specified pin."""
 		if pin not in self.pwm:
 			raise ValueError('Pin {0} is not configured as a PWM.  Make sure to first call start for the pin.'.format(pin))
-                self.set_duty_cycle_and_freq(pin, None, frequency_hz)
+                self.set_dutycycle_and_freq(pin, None, frequency_hz)
 
 	def stop(self, pin):
 		"""Stop PWM output on specified pin."""
@@ -184,7 +183,7 @@ class SysFS_PWM_Adapter(object):
         def write_to_chip(self, file, data):
                 write_to_file("/sys/class/pwm/pwmchip%d/%s" % (self._chip, file), data)
 
-        def write_to_pin(self, pin, file, data):
+        def write_to_pwm(self, pin, file, data):
                 write_to_file("/sys/class/pwm/pwmchip%d/pwm%d/%s" % (self._chip, pin, file), data)
 
 def write_to_file(file, data):
@@ -206,5 +205,7 @@ def get_platform_pwm(**keywords):
 	elif plat == Platform.BEAGLEBONE_BLACK:
 		import Adafruit_BBIO.PWM
 		return BBIO_PWM_Adapter(Adafruit_BBIO.PWM, **keywords)
+	elif plat == Platform.SysFS:
+		return SysFS_PWM_Adapter(**keywords)
 	elif plat == Platform.UNKNOWN:
 		raise RuntimeError('Could not determine platform.')

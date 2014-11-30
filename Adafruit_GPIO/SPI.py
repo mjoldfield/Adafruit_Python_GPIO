@@ -22,6 +22,8 @@
 import operator
 import time
 import io
+import fcntl
+from array import * 
 
 import Adafruit_GPIO as GPIO
 
@@ -78,7 +80,8 @@ class SpiDev(object):
 
 	def write(self, data):
 		"""Half-duplex SPI write.  The specified array of bytes will be clocked
-		out the MOSI line.
+		out the MOSI line. Note: there might be quite a low limit on the length
+                you can send.
 		"""
 		self._device.writebytes(data)
 
@@ -97,24 +100,24 @@ class SpiDev(object):
 
 
 # The implementation below is poor and does the very barest minimum to get my
-# project working. If you knew enough Python to do ioctls and had the hardware
-# to test it, then I don't think it would be too hard:
+# project working. Fleshing it out given time and stuff to test it probably isn't
+# too hard:
 #   https://www.kernel.org/doc/Documentation/spi/spidev
 #   https://docs.python.org/2/library/fcntl.html
 #
-# As it is, I've just fleshed out the API with stubs: fatal errors for read and
-# transfer; warnings for the rest.
+# As it is, I've just fleshed out the API with stubs
+#
 class DevFS(object):
         """/dev based implementation of the SPI protocol, currently rather lacking
            in features because I don't have the hardware and python fu  to test it.
         """
-        def __init__(self, dev, port):
+        def __init__(self, dev, port, max_speed_hz=500000):
                 self._dev  = dev
                 self._port = port
                 path = "/dev/spidev%d.%d" % (dev,port)
                 self._fd = io.open(path, mode="wb", buffering=0)
                 
-                # At this point should really initialize things with an ioctl
+                self.set_clock_hz(max_speed_hz)
 
 	def close(self):
 		"""Close communication with the SPI device."""
@@ -124,23 +127,35 @@ class DevFS(object):
 		"""Half-duplex SPI write.  The specified array of bytes will be clocked
 		out the MOSI line.
 		"""
-                fmt  = "%dB" % (len(data))
-                str  = struct.pack(fmt, *data)
-                self._fd.write(str)
+                self._fd.write(data)
                 
         def read(self, length):
+                """Unimplemented."""
                 raise Warning('Unimplemented')
 
         def transfer(self, data):
+                """Unimplemented."""
                 raise Warning('Unimplemented')
         
 	def set_clock_hz(self, hz):
-                sys.stderr.write("set_clock_hz() not implmented and thus ignored.\n");
+		"""Set the speed of the SPI clock in hertz.  Note that not all speeds
+		are supported and a lower speed might be chosen by the hardware.
+                Note: The SPI ioctl numbers are hardcoded into the source, but probably
+                shouldn't be. If this stop working, check them!
+		"""
+                # these are hardcoded, but probably shouldn't be!
+                SPI_IOC_WR_MAX_SPEED_HZ = 0x40046b04L
+                SPI_IOC_RD_MAX_SPEED_HZ = 0x80046b04L
+
+                speed = array('L', [hz])
+                fcntl.ioctl(self._fd, SPI_IOC_WR_MAX_SPEED_HZ, speed)
 
 	def set_mode(self, mode):
+                """Unimplemented."""
                 sys.stderr.write("set_mode() not implmented and thus ignored.\n");
 
 	def set_bit_order(self, order):
+                """Unimplemented."""
                 sys.stderr.write("set_bit_order() not implmented and thus ignored.\n");
 
 
